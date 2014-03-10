@@ -3,7 +3,8 @@ import pycosat
 from itertools import product
 
 from conda.compat import log2, ceil
-from conda.logic import Linear, Clauses, true, false
+from conda.logic import (Linear, Clauses, true, false, generate_constraints,
+    sat, min_sat)
 
 from tests.helpers import raises
 
@@ -636,3 +637,23 @@ def test_sorter():
     C = Clauses(0)
     assert C.build_sorter([]) == []
     assert not C.clauses
+
+def test_sat():
+    assert sat([[1]]) == [1]
+    assert sat([[1], [-1]]) == []
+    assert sat([]) == []
+
+def test_min_sat():
+    for alg in ['iterate', 'sorter', 'BDD', 'BDD_recursive']:
+        assert sorted([i[:4] for i in min_sat([[1, 2, 3, 4]], alg=alg)]) == [
+            [-1, -2, -3, 4],
+            [-1, -2, 3, -4],
+            [-1, 2, -3, -4],
+            [1, -2, -3, -4],
+        ]
+        assert sorted([i[:4] for i in min_sat([[1], [2, -4]], N=2, alg=alg)]) == [
+            [1, -2, -3, -4],
+            [1, -2, 3, -4],
+            ]
+
+# TODO: Test generate_constraints and bisect_constraints

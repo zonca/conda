@@ -8,6 +8,7 @@ from conda.config import default_python, pkgs_dirs
 import conda.config
 from conda.install import LINK_HARD
 import conda.plan as plan
+import conda.instructions as inst
 from conda.plan import display_actions
 from conda.resolve import Resolve
 
@@ -29,7 +30,7 @@ class TestMisc(unittest.TestCase):
             (['w3-1.2-0', '/opt/pkgs', 1], ('w3-1.2-0', '/opt/pkgs', 1)),
             (['w3-1.2-0', '/opt/pkgs', 1], ('w3-1.2-0', '/opt/pkgs', 1)),
             ([r'w3-1.2-0', 'C:\A B\pkgs', 2], ('w3-1.2-0', r'C:\A B\pkgs', 2))]:
-            self.assertEqual(plan.split_linkarg(*args), res)
+            self.assertEqual(inst.split_linkarg(args), res)
 
 
 class TestAddDeaultsToSpec(unittest.TestCase):

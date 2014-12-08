@@ -39,7 +39,8 @@ def display_actions(actions, index):
         print("\nThe following packages will be downloaded:\n")
 
         disp_lst = []
-        for dist in actions[inst.FETCH]:
+        for args in actions[inst.FETCH]:
+            dist = args[0]
             info = index[dist + '.tar.bz2']
             extra = '%15s' % human_bytes(info['size'])
             if config.show_channel_urls:
@@ -51,8 +52,8 @@ def display_actions(actions, index):
         if index and len(actions[inst.FETCH]) > 1:
             print(' ' * 4 + '-' * 60)
             print(" " * 43 + "Total: %14s" %
-                  human_bytes(sum(index[dist + '.tar.bz2']['size']
-                                  for dist in actions[inst.FETCH])))
+                  human_bytes(sum(index[args[0] + '.tar.bz2']['size']
+                                  for args in actions[inst.FETCH])))
 
     # package -> [oldver-oldbuild, newver-newbuild]
     packages = defaultdict(lambda: list(('', '')))

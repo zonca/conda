@@ -2,8 +2,6 @@ from logging import getLogger
 from conda.fetch import fetch_pkg
 from conda import install
 from conda import config
-import re
-from boto.emr.emrobject import Arg
 
 # op codes
 FETCH = 'FETCH'

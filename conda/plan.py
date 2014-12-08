@@ -10,7 +10,6 @@ NOTE:
 
 from __future__ import print_function, division, absolute_import
 
-import re
 import sys
 import os
 from logging import getLogger
@@ -182,8 +181,8 @@ def plan_from_actions(actions):
         op_order = inst.action_codes
 
     assert inst.PREFIX in actions and actions[inst.PREFIX]
-    res = ['# plan',
-           'PREFIX %s' % actions[inst.PREFIX]]
+    res = [
+           (inst.PREFIX, actions[inst.PREFIX])]
 
     if sys.platform == 'win32':
         # Always link/unlink menuinst first on windows in case a subsequent
@@ -194,7 +193,7 @@ def plan_from_actions(actions):
                 pkgs = []
                 for pkg in actions[op]:
                     if 'menuinst' in pkg:
-                        res.append('%s %s' % (op, pkg))
+                        res.append((op, pkg))
                     else:
                         pkgs.append(pkg)
                 actions[op] = pkgs
@@ -205,11 +204,11 @@ def plan_from_actions(actions):
         if not actions[op]:
             continue
         if '_' not in op:
-            res.append('PRINT %sing packages ...' % op.capitalize())
+            res.append((inst.PRINT, '%sing packages ...' % op.capitalize()))
         if op in inst.progress_cmds:
-            res.append('PROGRESS %d' % len(actions[op]))
+            res.append((inst.PROGRESS, len(actions[op])))
         for arg in actions[op]:
-            res.append('%s %s' % (op, arg))
+            res.append((op, arg))
     return res
 
 def extracted_where(dist):
@@ -220,7 +219,7 @@ def extracted_where(dist):
 
 def ensure_linked_actions(dists, prefix):
     actions = defaultdict(list)
-    actions[inst.PREFIX] = prefix
+    actions[inst.PREFIX] = (prefix,)
     for dist in dists:
         if install.is_linked(prefix, dist):
             continue
@@ -233,7 +232,7 @@ def ensure_linked_actions(dists, prefix):
                 lt = (install.LINK_SOFT if (config.allow_softlinks and
                                             sys.platform != 'win32') else
                       install.LINK_COPY)
-            actions[inst.LINK].append('%s %s %d' % (dist, extracted_in, lt))
+            actions[inst.LINK].append((dist, extracted_in, lt))
         else:
             # Make a guess from the first pkgs dir, which is where it will be
             # extracted
@@ -247,24 +246,24 @@ def ensure_linked_actions(dists, prefix):
                     lt = (install.LINK_SOFT if (config.allow_softlinks and
                                             sys.platform != 'win32') else
                       install.LINK_COPY)
-                actions[inst.LINK].append('%s %s %d' % (dist, config.pkgs_dirs[0], lt))
+                actions[inst.LINK].append((dist, config.pkgs_dirs[0], lt))
             except (OSError, IOError):
-                actions[inst.LINK].append(dist)
+                actions[inst.LINK].append((dist,))
             finally:
                 try:
                     install.rm_rf(join(config.pkgs_dirs[0], dist))
                 except (OSError, IOError):
                     pass
 
-            actions[inst.EXTRACT].append(dist)
+            actions[inst.EXTRACT].append((dist,))
             if install.is_fetched(config.pkgs_dirs[0], dist):
                 continue
-            actions[inst.FETCH].append(dist)
+            actions[inst.FETCH].append((dist,))
     return actions
 
 def force_linked_actions(dists, index, prefix):
     actions = defaultdict(list)
-    actions[inst.PREFIX] = prefix
+    actions[inst.PREFIX] = (prefix,)
     actions['op_order'] = (inst.RM_FETCHED, inst.FETCH, inst.RM_EXTRACTED, inst.EXTRACT,
                            inst.UNLINK, inst.LINK)
     for dist in dists:
@@ -273,17 +272,17 @@ def force_linked_actions(dists, index, prefix):
         if isfile(pkg_path):
             try:
                 if md5_file(pkg_path) != index[fn]['md5']:
-                    actions[inst.RM_FETCHED].append(dist)
-                    actions[inst.FETCH].append(dist)
+                    actions[inst.RM_FETCHED].append((dist,))
+                    actions[inst.FETCH].append((dist,))
             except KeyError:
                 sys.stderr.write('Warning: cannot lookup MD5 of: %s' % fn)
         else:
-            actions[inst.FETCH].append(dist)
-        actions[inst.RM_EXTRACTED].append(dist)
-        actions[inst.EXTRACT].append(dist)
+            actions[inst.FETCH].append((dist,))
+        actions[inst.RM_EXTRACTED].append((dist,))
+        actions[inst.EXTRACT].append((dist,))
         if isfile(join(prefix, 'conda-meta', dist + '.json')):
-            actions[inst.UNLINK].append(dist)
-        actions[inst.LINK].append(dist)
+            actions[inst.UNLINK].append((dist,))
+        actions[inst.LINK].append((dist,))
     return actions
 
 # -------------------------------------------------------------------
@@ -491,9 +490,8 @@ def revert_actions(prefix, revision=-1):
 def cmds_from_plan(plan):
     res = []
     for line in plan:
-        log.debug(' %s' % line)
-        line = line.strip()
-        if not line or line.startswith('#'):
+        log.debug(' %s' % str(line))
+        if not line:
             continue
         res.append(line.split(None, 1))
     return res
@@ -505,21 +503,22 @@ def execute_plan(plan, index=None, verbose=False):
 
     # set default prefix
 
-    cmds = cmds_from_plan(plan)
-
     state = {'i': None, 'prefix': config.root_dir, 'index':index}
 
-    for instruction, arg in cmds:
+    for instruction, args in plan:
+        if not isinstance(args, (list, tuple)):
+            args = (args,)
+
         if state['i'] is not None and instruction in inst.progress_cmds:
             state['i'] += 1
-            getLogger('progress.update').info((install.name_dist(arg), state['i']))
+            getLogger('progress.update').info((install.name_dist(args[0]), state['i']))
 
         cmd = inst.commands.get(instruction)
 
         if cmd is None:
             raise Exception("Did not expect command: %r" % cmd)
 
-        cmd(state, arg)
+        cmd(state, *args)
 
         if state['i'] is not None and cmd in inst.progress_cmds and state['maxval'] == state['i']:
             state['i'] = None
@@ -530,7 +529,7 @@ def execute_plan(plan, index=None, verbose=False):
 
 def execute_actions(actions, index=None, verbose=False):
     plan = plan_from_actions(actions)
-    with History(actions[inst.PREFIX]):
+    with History(actions[inst.PREFIX][0]):
         execute_plan(plan, index, verbose)
 
 

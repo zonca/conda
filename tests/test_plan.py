@@ -8,7 +8,6 @@ from conda.config import default_python, pkgs_dirs
 import conda.config
 from conda.install import LINK_HARD
 import conda.plan as plan
-import conda.instructions as inst
 from conda.plan import display_actions
 from conda.resolve import Resolve
 
@@ -25,12 +24,12 @@ def solve(specs):
 class TestMisc(unittest.TestCase):
 
     def test_split_linkarg(self):
-        for arg, res in [
-            ('w3-1.2-0', ('w3-1.2-0', pkgs_dirs[0], LINK_HARD)),
-            ('w3-1.2-0 /opt/pkgs 1', ('w3-1.2-0', '/opt/pkgs', 1)),
-            (' w3-1.2-0  /opt/pkgs  1  ', ('w3-1.2-0', '/opt/pkgs', 1)),
-            (r'w3-1.2-0 C:\A B\pkgs 2', ('w3-1.2-0', r'C:\A B\pkgs', 2))]:
-            self.assertEqual(inst.split_linkarg(arg), res)
+        for args, res in [
+            (['w3-1.2-0'], ('w3-1.2-0', pkgs_dirs[0], LINK_HARD)),
+            (['w3-1.2-0', '/opt/pkgs', 1], ('w3-1.2-0', '/opt/pkgs', 1)),
+            (['w3-1.2-0', '/opt/pkgs', 1], ('w3-1.2-0', '/opt/pkgs', 1)),
+            ([r'w3-1.2-0', 'C:\A B\pkgs', 2], ('w3-1.2-0', r'C:\A B\pkgs', 2))]:
+            self.assertEqual(plan.split_linkarg(*args), res)
 
 
 class TestAddDeaultsToSpec(unittest.TestCase):
@@ -87,8 +86,8 @@ class TestAddDeaultsToSpec(unittest.TestCase):
 
 def test_display_actions():
     conda.config.show_channel_urls = False
-    actions = defaultdict(list, {"FETCH": ['sympy-0.7.2-py27_0',
-        "numpy-1.7.1-py27_0"]})
+    actions = defaultdict(list, {"FETCH": [['sympy-0.7.2-py27_0'],
+                                           ["numpy-1.7.1-py27_0"]]})
     # The older test index doesn't have the size metadata
     index['sympy-0.7.2-py27_0.tar.bz2']['size'] = 4374752
     index["numpy-1.7.1-py27_0.tar.bz2"]['size'] = 5994338
@@ -109,8 +108,16 @@ The following packages will be downloaded:
 """
 
     actions = defaultdict(list, {'PREFIX':
-    '/Users/aaronmeurer/anaconda/envs/test', 'SYMLINK_CONDA':
-    ['/Users/aaronmeurer/anaconda'], 'LINK': ['python-3.3.2-0', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 1', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 1']})
+                                 '/Users/aaronmeurer/anaconda/envs/test',
+                                 'SYMLINK_CONDA': [['/Users/aaronmeurer/anaconda']],
+                                 'LINK': [['python-3.3.2-0'],
+                                          ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 1, ],
+                                           ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                           ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                           ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 1]
+                                          ]
+                                 }
+                          )
 
     with captured() as c:
         display_actions(actions, index)
@@ -145,8 +152,9 @@ The following packages will be REMOVED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0'], 'UNLINK':
-    ['cython-0.19-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0']],
+                           'UNLINK': [['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -170,9 +178,13 @@ The following packages will be DOWNGRADED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0',
-        'dateutil-1.5-py33_0', 'numpy-1.7.1-py33_0'], 'UNLINK':
-        ['cython-0.19-py33_0', 'dateutil-2.1-py33_1', 'pip-1.3.1-py33_1']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0'],
+                                    ['dateutil-1.5-py33_0'], ['numpy-1.7.1-py33_0']
+                                    ],
+                           'UNLINK': [['cython-0.19-py33_0'],
+                                      ['dateutil-2.1-py33_1'],
+                                      ['pip-1.3.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -197,9 +209,11 @@ The following packages will be DOWNGRADED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0',
-        'dateutil-2.1-py33_1'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0'],
+                                    ['dateutil-2.1-py33_1']],
+                           'UNLINK': [['cython-0.19-py33_0'],
+                                      ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -230,8 +244,8 @@ The following packages will be DOWNGRADED:
 
 def test_display_actions_show_channel_urls():
     conda.config.show_channel_urls = True
-    actions = defaultdict(list, {"FETCH": ['sympy-0.7.2-py27_0',
-        "numpy-1.7.1-py27_0"]})
+    actions = defaultdict(list, {"FETCH": [['sympy-0.7.2-py27_0'],
+                                           ["numpy-1.7.1-py27_0"]]})
     # The older test index doesn't have the size metadata
     index['sympy-0.7.2-py27_0.tar.bz2']['size'] = 4374752
     index["numpy-1.7.1-py27_0.tar.bz2"]['size'] = 5994338
@@ -252,9 +266,15 @@ The following packages will be downloaded:
 """
 
 
-    actions = defaultdict(list, {'PREFIX':
-    '/Users/aaronmeurer/anaconda/envs/test', 'SYMLINK_CONDA':
-    ['/Users/aaronmeurer/anaconda'], 'LINK': ['python-3.3.2-0', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 1', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 1']})
+    actions = defaultdict(list,
+                          {'PREFIX': '/Users/aaronmeurer/anaconda/envs/test',
+                           'SYMLINK_CONDA': [['/Users/aaronmeurer/anaconda']],
+                           'LINK': [['python-3.3.2-0'],
+                                    ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 1]
+                                   ]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -289,8 +309,8 @@ The following packages will be REMOVED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0'], 'UNLINK':
-    ['cython-0.19-py33_0']})
+    actions = defaultdict(list, {'LINK': [['cython-0.19.1-py33_0']],
+                                 'UNLINK': [['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -316,9 +336,12 @@ The following packages will be DOWNGRADED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0',
-        'dateutil-1.5-py33_0', 'numpy-1.7.1-py33_0'], 'UNLINK':
-        ['cython-0.19-py33_0', 'dateutil-2.1-py33_1', 'pip-1.3.1-py33_1']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0'],
+                                    ['dateutil-1.5-py33_0'], ['numpy-1.7.1-py33_0']],
+                           'UNLINK': [['cython-0.19-py33_0'],
+                                      ['dateutil-2.1-py33_1'],
+                                      ['pip-1.3.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -343,9 +366,11 @@ The following packages will be DOWNGRADED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0',
-        'dateutil-2.1-py33_1'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0'],
+                                    ['dateutil-2.1-py33_1']],
+                           'UNLINK':  [['cython-0.19-py33_0'],
+                                       ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -405,8 +430,15 @@ The following packages will be DOWNGRADED:
 def test_display_actions_link_type():
     conda.config.show_channel_urls = False
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 2', 'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 2',
-    'numpy-1.7.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 2', 'python-3.3.2-0 /Users/aaronmeurer/anaconda/pkgs 2', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 2', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 2', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 2', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 2']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['numpy-1.7.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['python-3.3.2-0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 2]]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -425,9 +457,11 @@ The following NEW packages will be INSTALLED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 2',
-        'dateutil-2.1-py33_1 /Users/aaronmeurer/anaconda/pkgs 2'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['dateutil-2.1-py33_1', '/Users/aaronmeurer/anaconda/pkgs', 2]],
+                           'UNLINK':  [['cython-0.19-py33_0'],
+                                       ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -440,9 +474,11 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19-py33_0 /Users/aaronmeurer/anaconda/pkgs 2',
-        'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 2'], 'UNLINK':  ['cython-0.19.1-py33_0',
-            'dateutil-2.1-py33_1']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2],
+                                    ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 2]],
+                           'UNLINK':  [['cython-0.19.1-py33_0'],
+                                       ['dateutil-2.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -455,8 +491,15 @@ The following packages will be DOWNGRADED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 1', 'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 1',
-    'numpy-1.7.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 1', 'python-3.3.2-0 /Users/aaronmeurer/anaconda/pkgs 1', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 1', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 1', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 1']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['numpy-1.7.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['python-3.3.2-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 1]]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -475,9 +518,11 @@ The following NEW packages will be INSTALLED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 1',
-        'dateutil-2.1-py33_1 /Users/aaronmeurer/anaconda/pkgs 1'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                    ['dateutil-2.1-py33_1', '/Users/aaronmeurer/anaconda/pkgs', 1]],
+                           'UNLINK':  [['cython-0.19-py33_0'],
+                                       ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -490,9 +535,10 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19-py33_0 /Users/aaronmeurer/anaconda/pkgs 1',
-        'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 1'], 'UNLINK':  ['cython-0.19.1-py33_0',
-            'dateutil-2.1-py33_1']})
+    actions = defaultdict(list, {'LINK': [['cython-0.19-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1],
+                                          ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 1]],
+                                 'UNLINK':  [['cython-0.19.1-py33_0'],
+                                             ['dateutil-2.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -505,8 +551,15 @@ The following packages will be DOWNGRADED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3', 'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-    'numpy-1.7.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3', 'python-3.3.2-0 /Users/aaronmeurer/anaconda/pkgs 3', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 3', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 3', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 3', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 3']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['numpy-1.7.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['python-3.3.2-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 3]]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -525,9 +578,11 @@ The following NEW packages will be INSTALLED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-        'dateutil-2.1-py33_1 /Users/aaronmeurer/anaconda/pkgs 3'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['dateutil-2.1-py33_1', '/Users/aaronmeurer/anaconda/pkgs', 3]],
+                           'UNLINK':  [['cython-0.19-py33_0'],
+                                       ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -540,9 +595,10 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-        'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 3'], 'UNLINK':  ['cython-0.19.1-py33_0',
-            'dateutil-2.1-py33_1']})
+    actions = defaultdict(list, {'LINK': [['cython-0.19-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                          ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3]],
+                                 'UNLINK':  [['cython-0.19.1-py33_0'],
+                                             ['dateutil-2.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -560,8 +616,15 @@ The following packages will be DOWNGRADED:
     index['cython-0.19.1-py33_0.tar.bz2']['channel'] = 'my_channel'
     index['dateutil-1.5-py33_0.tar.bz2']['channel'] = 'my_channel'
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3', 'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-    'numpy-1.7.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3', 'python-3.3.2-0 /Users/aaronmeurer/anaconda/pkgs 3', 'readline-6.2-0 /Users/aaronmeurer/anaconda/pkgs 3', 'sqlite-3.7.13-0 /Users/aaronmeurer/anaconda/pkgs 3', 'tk-8.5.13-0 /Users/aaronmeurer/anaconda/pkgs 3', 'zlib-1.2.7-0 /Users/aaronmeurer/anaconda/pkgs 3']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['numpy-1.7.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['python-3.3.2-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['readline-6.2-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['sqlite-3.7.13-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['tk-8.5.13-0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['zlib-1.2.7-0', '/Users/aaronmeurer/anaconda/pkgs', 3]]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -580,9 +643,11 @@ The following NEW packages will be INSTALLED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19.1-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-        'dateutil-2.1-py33_1 /Users/aaronmeurer/anaconda/pkgs 3'], 'UNLINK':  ['cython-0.19-py33_0',
-            'dateutil-1.5-py33_0']})
+    actions = defaultdict(list,
+                          {'LINK': [['cython-0.19.1-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                    ['dateutil-2.1-py33_1', '/Users/aaronmeurer/anaconda/pkgs', 3]],
+                           'UNLINK':  [['cython-0.19-py33_0'],
+                                       ['dateutil-1.5-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -595,9 +660,10 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['cython-0.19-py33_0 /Users/aaronmeurer/anaconda/pkgs 3',
-        'dateutil-1.5-py33_0 /Users/aaronmeurer/anaconda/pkgs 3'], 'UNLINK':  ['cython-0.19.1-py33_0',
-            'dateutil-2.1-py33_1']})
+    actions = defaultdict(list, {'LINK': [['cython-0.19-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3],
+                                          ['dateutil-1.5-py33_0', '/Users/aaronmeurer/anaconda/pkgs', 3]],
+                                 'UNLINK':  [['cython-0.19.1-py33_0'],
+                                             ['dateutil-2.1-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -613,7 +679,7 @@ The following packages will be DOWNGRADED:
 def test_display_actions_features():
     conda.config.show_channel_urls = False
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0', 'cython-0.19-py33_0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0'], ['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -626,7 +692,7 @@ The following NEW packages will be INSTALLED:
 
 """
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0', 'cython-0.19-py33_0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0'], ['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -639,7 +705,7 @@ The following packages will be REMOVED:
 
 """
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0'], 'LINK': ['numpy-1.7.0-py33_p0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0']], 'LINK': [['numpy-1.7.0-py33_p0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -651,7 +717,7 @@ The following packages will be DOWNGRADED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0'], 'UNLINK': ['numpy-1.7.0-py33_p0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0']], 'UNLINK': [['numpy-1.7.0-py33_p0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -663,7 +729,7 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0'], 'UNLINK': ['numpy-1.7.1-py33_0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0']], 'UNLINK': [['numpy-1.7.1-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -676,7 +742,7 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0'], 'LINK': ['numpy-1.7.1-py33_0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0']], 'LINK': [['numpy-1.7.1-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -690,7 +756,7 @@ The following packages will be UPDATED:
 
     conda.config.show_channel_urls = True
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0', 'cython-0.19-py33_0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0'], ['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -704,7 +770,7 @@ The following NEW packages will be INSTALLED:
 """
 
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0', 'cython-0.19-py33_0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0'], ['cython-0.19-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -717,7 +783,7 @@ The following packages will be REMOVED:
 
 """
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0'], 'LINK': ['numpy-1.7.0-py33_p0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0']], 'LINK': [['numpy-1.7.0-py33_p0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -729,7 +795,7 @@ The following packages will be DOWNGRADED:
 
 """
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0'], 'UNLINK': ['numpy-1.7.0-py33_p0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0']], 'UNLINK': [['numpy-1.7.0-py33_p0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -742,7 +808,7 @@ The following packages will be UPDATED:
 """
 
 
-    actions = defaultdict(list, {'LINK': ['numpy-1.7.1-py33_p0'], 'UNLINK': ['numpy-1.7.1-py33_0']})
+    actions = defaultdict(list, {'LINK': [['numpy-1.7.1-py33_p0']], 'UNLINK': [['numpy-1.7.1-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -755,7 +821,7 @@ The following packages will be UPDATED:
 
 """
 
-    actions = defaultdict(list, {'UNLINK': ['numpy-1.7.1-py33_p0'], 'LINK': ['numpy-1.7.1-py33_0']})
+    actions = defaultdict(list, {'UNLINK': [['numpy-1.7.1-py33_p0']], 'LINK': [['numpy-1.7.1-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -770,7 +836,7 @@ The following packages will be UPDATED:
 def test_display_actions_no_index():
     # Test removing a package that is not in the index. This issue
     # should only come up for removing.
-    actions = defaultdict(list, {'UNLINK': ['notinstalled-1.0-py33_0']})
+    actions = defaultdict(list, {'UNLINK': [['notinstalled-1.0-py33_0']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -782,8 +848,8 @@ The following packages will be REMOVED:
 
 """
 
-    actions = defaultdict(list, {"LINK": ['numpy-1.7.1-py33_0'], "UNLINK":
-        ['numpy-2.0.0-py33_1']})
+    actions = defaultdict(list, {"LINK": [['numpy-1.7.1-py33_0']], "UNLINK":
+        [['numpy-2.0.0-py33_1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -797,8 +863,8 @@ The following packages will be DOWNGRADED:
 
     # tk-8.5.13-1 is not in the index. Test that it guesses the build number
     # correctly.
-    actions = defaultdict(list, {"LINK": ['tk-8.5.13-0'], "UNLINK":
-        ['tk-8.5.13-1']})
+    actions = defaultdict(list, {"LINK": [['tk-8.5.13-0']],
+                                 "UNLINK": [['tk-8.5.13-1']]})
 
     with captured() as c:
         display_actions(actions, index)
@@ -871,3 +937,6 @@ def test_plan_menuinst_first():
         assert conda_plan[3] == 'FETCH %s' % menuinst_new
         assert conda_plan[4] == 'EXTRACT %s' % menuinst_new
         assert conda_plan[5] == 'LINK %s' % menuinst_new
+
+if __name__ == '__main__':
+    unittest.main()

@@ -488,50 +488,10 @@ def revert_actions(prefix, revision=-1):
 
 # ---------------------------- EXECUTION --------------------------
 
-def cmds_from_plan(plan):
-    res = []
-    for line in plan:
-        log.debug(' %s' % str(line))
-        if not line:
-            continue
-        res.append(line.split(None, 1))
-    return res
-
-def execute_plan(plan, index=None, verbose=False):
-    if verbose:
-        from conda.console import setup_verbose_handlers
-        setup_verbose_handlers()
-
-    # set default prefix
-
-    state = {'i': None, 'prefix': config.root_dir, 'index':index}
-
-    for instruction, args in plan:
-        if not isinstance(args, (list, tuple)):
-            args = (args,)
-
-        if state['i'] is not None and instruction in inst.progress_cmds:
-            state['i'] += 1
-            getLogger('progress.update').info((install.name_dist(args[0]), state['i']))
-
-        cmd = inst.commands.get(instruction)
-
-        if cmd is None:
-            raise Exception("Did not expect command: %r" % cmd)
-
-        cmd(state, *args)
-
-        if state['i'] is not None and cmd in inst.progress_cmds and state['maxval'] == state['i']:
-            state['i'] = None
-            getLogger('progress.stop').info(None)
-
-    install.messages(state['prefix'])
-
-
 def execute_actions(actions, index=None, verbose=False):
     plan = plan_from_actions(actions)
-    with History(actions[inst.PREFIX][0]):
-        execute_plan(plan, index, verbose)
+    with History(actions[inst.PREFIX]):
+        inst.execute_instructions(plan, index, verbose)
 
 
 if __name__ == '__main__':

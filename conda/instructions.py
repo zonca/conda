@@ -110,6 +110,9 @@ def execute_instructions(plan, index=None, verbose=False):
 
     for instruction, args in plan:
 
+        if not isinstance(args, (list, tuple)):
+            args = (args,)
+
         log.debug(' %s%r' % (instruction, args))
 
         if state['i'] is not None and instruction in progress_cmds:

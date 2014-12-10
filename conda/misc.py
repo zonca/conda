@@ -202,7 +202,7 @@ def install_local_packages(prefix, paths, verbose=False):
         shutil.copyfile(src_path, dst_path)
 
     actions = defaultdict(list)
-    actions['PREFIX'] = prefix
+    actions['PREFIX'] = [prefix]
     actions['op_order'] = RM_EXTRACTED, EXTRACT, UNLINK, LINK
     for dist in dists:
         actions[RM_EXTRACTED].append(dist)

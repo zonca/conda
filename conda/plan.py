@@ -205,9 +205,9 @@ def plan_from_actions(actions):
         if not actions[op]:
             continue
         if '_' not in op:
-            res.append((inst.PRINT, '%sing packages ...' % op.capitalize()))
+            res.append((inst.PRINT, ('%sing packages ...' % op.capitalize(),)))
         if op in inst.progress_cmds:
-            res.append((inst.PROGRESS, len(actions[op])))
+            res.append((inst.PROGRESS, (len(actions[op]),)))
         for arg in actions[op]:
             res.append((op, arg))
     return res
@@ -398,12 +398,12 @@ def install_actions(prefix, index, specs, force=False, only_names=None, pinned=T
         actions = ensure_linked_actions(smh, prefix)
 
     if actions[inst.LINK] and sys.platform != 'win32':
-        actions[inst.SYMLINK_CONDA] = [config.root_dir]
+        actions[inst.SYMLINK_CONDA].append([config.root_dir])
 
     for dist in sorted(linked):
         name = install.name_dist(dist)
         if name in must_have and dist != must_have[name]:
-            actions[inst.UNLINK].append(dist)
+            actions[inst.UNLINK].append((dist,))
 
     return actions
 
@@ -421,7 +421,7 @@ def remove_actions(prefix, specs, index=None, pinned=True):
     pinned_specs = get_pinned_specs(prefix)
 
     actions = defaultdict(list)
-    actions[inst.PREFIX] = prefix
+    actions[inst.PREFIX] = [prefix]
     for dist in sorted(linked):
         fn = dist + '.tar.bz2'
         if any(ms.match(fn) for ms in mss):
@@ -429,7 +429,7 @@ def remove_actions(prefix, specs, index=None, pinned=True):
     pinned_specs):
                 raise RuntimeError("Cannot remove %s because it is pinned. Use --no-pin to override." % dist)
 
-            actions[inst.UNLINK].append(dist)
+            actions[inst.UNLINK].append((dist,))
             if r and fn in index and r.track_features(fn):
                 features_actions = remove_features_actions(prefix, index, r.track_features(fn))
                 for action in features_actions:
@@ -448,7 +448,7 @@ def remove_features_actions(prefix, index, features):
     r = Resolve(index)
 
     actions = defaultdict(list)
-    actions[inst.PREFIX] = prefix
+    actions[inst.PREFIX] = [prefix]
     _linked = [d + '.tar.bz2' for d in linked]
     to_link = []
     for dist in sorted(linked):
@@ -456,9 +456,9 @@ def remove_features_actions(prefix, index, features):
         if fn not in index:
             continue
         if r.track_features(fn).intersection(features):
-            actions[inst.UNLINK].append(dist)
+            actions[inst.UNLINK].append((dist,))
         if r.features(fn).intersection(features):
-            actions[inst.UNLINK].append(dist)
+            actions[inst.UNLINK].append((dist,))
             subst = r.find_substitute(_linked, features, fn)
             if subst:
                 to_link.append(subst[:-8])
@@ -482,7 +482,7 @@ def revert_actions(prefix, revision=-1):
 
     actions = ensure_linked_actions(state, prefix)
     for dist in curr - state:
-        actions[inst.UNLINK].append(dist)
+        actions[inst.UNLINK].append((dist,))
 
     return actions
 
@@ -490,7 +490,11 @@ def revert_actions(prefix, revision=-1):
 
 def execute_actions(actions, index=None, verbose=False):
     plan = plan_from_actions(actions)
-    with History(actions[inst.PREFIX]):
+
+    if not isinstance(actions[inst.PREFIX], (list, tuple)):
+        actions[inst.PREFIX] = [actions[inst.PREFIX]]
+
+    with History(actions[inst.PREFIX][0]):
         inst.execute_instructions(plan, index, verbose)
 
 

@@ -2,7 +2,7 @@ from logging import getLogger
 
 from conda import config
 from conda import install
-from conda.exceptions import InvaidInstruction
+from conda.exceptions import InvalidInstruction
 from conda.fetch import fetch_pkg
 
 log = getLogger(__name__)
@@ -122,7 +122,7 @@ def execute_instructions(plan, index=None, verbose=False):
         cmd = commands.get(instruction)
 
         if cmd is None:
-            raise InvaidInstruction(instruction)
+            raise InvalidInstruction(instruction)
 
         cmd(state, *args)
 

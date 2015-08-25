@@ -245,7 +245,7 @@ Allowed channels are:
         from collections import OrderedDict
 
         repodatas = []
-        with concurrent.futures.ThreadPoolExecutor(10) as executor:
+        with concurrent.futures.ThreadPoolExecutor(3) as executor:
             future_to_url = OrderedDict([(executor.submit(
                             fetch_repodata, url, use_cache=use_cache,
                             session=session), url)
